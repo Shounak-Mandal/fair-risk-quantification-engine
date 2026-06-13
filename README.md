@@ -42,6 +42,3 @@ Designed to be fast, serverless, and entirely client-side:
 * **Risk Engine:** Vanilla JavaScript (Custom Monte Carlo / Beta-PERT Simulation Engine)
 * **Data Visualization:** Custom SVG charting for Loss Exceedance Curves (LEC)
 * **Deployment:** Vercel / GitHub Pages
-
----
-*Built as a portfolio project to demonstrate the transition from operational security to strategic, business-aligned Governance, Risk, and Compliance (GRC).*
