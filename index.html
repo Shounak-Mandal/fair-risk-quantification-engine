@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cyber Risk Quantification Tool · FAIR + Monte Carlo</title>
+<meta name="description" content="A FAIR-based cyber risk quantification tool that converts threat scenarios into Monte Carlo loss distributions and ROSI-ranked control investment recommendations." />
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#020818;background-image:radial-gradient(ellipse at 20% 20%,rgba(56,189,248,.06) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(99,102,241,.05) 0%,transparent 60%);font-family:system-ui,'Segoe UI',sans-serif;color:#e2e8f0;min-height:100vh}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(2,8,24,.92);border-bottom:1px solid #0f172a;padding:16px;backdrop-filter:blur(12px)}
+.topbar .inner{max-width:780px;margin:0 auto;display:flex;justify-content:space-between;align-items:center}
+.eyebrow{font-size:10px;letter-spacing:.2em;color:#38bdf8;text-transform:uppercase;font-weight:700;display:flex;align-items:center;gap:8px}
+.dot{width:7px;height:7px;border-radius:50%;background:#38bdf8;box-shadow:0 0 10px #38bdf8}
+h1{font-size:20px;margin:2px 0 0;font-family:Georgia,serif;color:#f1f5f9;letter-spacing:-.02em}
+.badge{font-size:12px;color:#64748b;background:#0f172a;padding:5px 12px;border-radius:20px;border:1px solid #1e293b}
+.wrap{max-width:780px;margin:0 auto;padding:0 16px 60px}
+.steps{display:flex;margin:28px 0 32px}
+.step{flex:1}
+.step .bar{height:3px;background:#1e293b;margin-bottom:8px}
+.step.on .bar{background:#38bdf8}
+.step .nm{font-size:10px;text-align:center;text-transform:uppercase;letter-spacing:.05em;color:#475569}
+.step.cur .nm{color:#38bdf8;font-weight:700}.step.done .nm{color:#94a3b8}
+.card{background:rgba(15,23,42,.85);border:1px solid #1e293b;border-radius:16px;padding:28px;margin-bottom:20px}
+.h2{font-size:18px;font-weight:800;margin:0 0 6px;font-family:Georgia,serif;color:#f1f5f9;letter-spacing:-.02em}
+.sub{font-size:13px;color:#64748b;margin:0 0 24px;line-height:1.6}
+.lbl{display:block;font-size:13px;font-weight:600;color:#cbd5e1;margin-bottom:6px}
+.muted{color:#64748b;font-weight:400}
+select,input[type=text],textarea{width:100%;padding:10px 14px;margin-bottom:20px;background:#0f172a;border:1px solid #1e293b;border-radius:8px;color:#f1f5f9;font-size:14px;outline:none;font-family:inherit}
+textarea{resize:vertical}
+select{cursor:pointer}
+.numbox{width:104px;text-align:right;padding:4px 8px;background:#0f172a;border:1px solid #1e293b;border-radius:6px;color:#38bdf8;font-size:13px;font-weight:700;font-family:monospace;outline:none}
+.btn{padding:12px 28px;border-radius:10px;border:none;cursor:pointer;font-weight:700;font-size:14px;letter-spacing:.04em;font-family:inherit}
+.btn-primary{background:#38bdf8;color:#0f172a}
+.btn-secondary{background:#1e293b;color:#94a3b8;border:1px solid #334155}
+.btn-danger{background:#7f1d1d;color:#fca5a5;border:1px solid #991b1b}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.row{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.chip{padding:6px 14px;border-radius:20px;border:1px solid #334155;background:transparent;color:#64748b;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.chip.sel{border-color:#38bdf8;background:rgba(56,189,248,.15);color:#38bdf8}
+.field{margin-bottom:20px}
+.field-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px}
+.field-top .l{font-size:13px;font-weight:600;color:#cbd5e1}
+.vw{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.pfx{font-size:13px;color:#38bdf8;font-family:monospace}
+.unit{font-size:12px;color:#64748b;font-family:monospace;white-space:nowrap}
+.rng{width:100%;accent-color:#38bdf8;cursor:pointer}
+.field-bot{display:flex;justify-content:space-between;align-items:flex-start;margin-top:4px;gap:8px}
+.hint{font-size:11px;color:#64748b;line-height:1.5;margin:0}
+.cap{font-size:11px;color:#475569;font-family:monospace;white-space:nowrap}
+.box{background:#0f172a;border-radius:10px;padding:12px 16px;margin-bottom:20px;border:1px solid #1e293b}
+.k{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.06em}
+.ctrl{background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:14px 16px;cursor:pointer;margin-bottom:10px}
+.ctrl.on{background:rgba(56,189,248,.06);border-color:#38bdf8}
+.cbox{width:18px;height:18px;border-radius:4px;border:2px solid #334155;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;vertical-align:middle}
+.ctrl.on .cbox{background:#38bdf8;border-color:#38bdf8;color:#0f172a;font-weight:900;font-size:12px}
+.tag{font-size:10px;color:#64748b;background:#1e293b;padding:2px 8px;border-radius:6px;font-family:monospace}
+.crit{font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(239,68,68,.15);color:#ef4444;font-weight:700;border:1px solid rgba(239,68,68,.3)}
+.mono{font-family:monospace}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.footer{text-align:center;margin-top:40px;color:#334155;font-size:11px;letter-spacing:.04em;line-height:1.8;padding:0 16px}
+a{color:#38bdf8}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="inner" id="topbar"></div></div>
+<div class="wrap"><div class="steps" id="steps"></div><div id="app"></div>
+<div class="footer">FAIR · Beta-PERT Monte Carlo · IBM Cost of a Data Breach 2025 · NIST CSF · ISO 27001 · CIS Controls<br>
+<span style="color:#1e293b">Estimates are model-based and illustrative — validate with finance, legal, and threat intelligence before any decision.</span></div></div>
+
+<script>
+/* ===================== ENGINE + DATA (framework-agnostic) ===================== */
+const INDUSTRY_DATA = {
+  healthcare:    { name: "Healthcare",          avgBreachCost: 7420000, avgDetectionDays: 279, exact: true  },
+  financial:     { name: "Financial Services",  avgBreachCost: 5560000, avgDetectionDays: 177, exact: true  },
+  manufacturing: { name: "Industrial / Mfg",    avgBreachCost: 5000000, avgDetectionDays: 199, exact: true  },
+  energy:        { name: "Energy",              avgBreachCost: 4830000, avgDetectionDays: 200, exact: true  },
+  technology:    { name: "Technology",          avgBreachCost: 4790000, avgDetectionDays: 190, exact: true  },
+  pharma:        { name: "Pharmaceutical",      avgBreachCost: 4600000, avgDetectionDays: 190, exact: false },
+  media:         { name: "Media",               avgBreachCost: 3700000, avgDetectionDays: 198, exact: false },
+  education:     { name: "Education",           avgBreachCost: 3400000, avgDetectionDays: 227, exact: false },
+  retail:        { name: "Retail",              avgBreachCost: 2980000, avgDetectionDays: 212, exact: false },
+  hospitality:   { name: "Hospitality",         avgBreachCost: 2800000, avgDetectionDays: 209, exact: false },
+  government:    { name: "Government / Public", avgBreachCost: 2400000, avgDetectionDays: 251, exact: false },
+  other:         { name: "Other / Cross-sector",avgBreachCost: 4440000, avgDetectionDays: 241, exact: true  },
+};
+
+const REVENUE_RANGES = [
+  { label: "Under $1M",    value: 500000 },
+  { label: "$1M – $10M",   value: 5000000 },
+  { label: "$10M – $50M",  value: 30000000 },
+  { label: "$50M – $250M", value: 150000000 },
+  { label: "$250M – $1B",  value: 625000000 },
+  { label: "Over $1B",     value: 2000000000 },
+];
+
+const DATA_TYPES = ["PII","PHI","PCI / Card Data","Intellectual Property","Credentials","Financial Records","Trade Secrets"];
+const THREAT_TYPES = ["External Attacker","Insider Threat","Third-Party / Vendor","Nation-State Actor","AI / Shadow-AI Exposure","Natural Disaster / Physical"];
+const ASSET_TYPES  = ["Cloud Infrastructure","Endpoints / Laptops","Servers / On-Prem","Web Application","Database","Email / Collaboration","AI Models / GenAI Tools","OT / ICS Systems"];
+
+/* ── Control library ──────────────────────────────────────────────────────────
+   cost      = illustrative annualized $ to operate the control (user-editable)
+   reduction = modeled increase to Control Strength (0–10 scale) if implemented   */
+const CONTROL_MAPPINGS = {
+  "External Attacker": [
+    { id:"c1", name:"Multi-Factor Authentication (MFA)",       nist:"PR.AC-7", iso:"A.9.4.2",  cis:"CIS 6",  critical:true,  cost:25000,  reduction:1.6 },
+    { id:"c2", name:"Endpoint Detection & Response (EDR)",     nist:"DE.CM-4", iso:"A.12.2.1", cis:"CIS 10", critical:true,  cost:85000,  reduction:1.5 },
+    { id:"c3", name:"Vulnerability Management Program",        nist:"ID.RA-1", iso:"A.12.6.1", cis:"CIS 7",  critical:true,  cost:60000,  reduction:1.3 },
+    { id:"c4", name:"Web Application Firewall (WAF)",          nist:"PR.AC-5", iso:"A.13.1.1", cis:"CIS 13", critical:false, cost:30000,  reduction:0.8 },
+    { id:"c5", name:"Security Awareness Training",             nist:"PR.AT-1", iso:"A.7.2.2",  cis:"CIS 14", critical:false, cost:20000,  reduction:0.7 },
+  ],
+  "Insider Threat": [
+    { id:"c6", name:"Privileged Access Management (PAM)",      nist:"PR.AC-4", iso:"A.9.2.3",  cis:"CIS 6",  critical:true,  cost:90000,  reduction:1.6 },
+    { id:"c7", name:"User & Entity Behavior Analytics (UEBA)", nist:"DE.CM-3", iso:"A.12.4.1", cis:"CIS 8",  critical:true,  cost:70000,  reduction:1.3 },
+    { id:"c8", name:"Data Loss Prevention (DLP)",              nist:"PR.DS-5", iso:"A.8.2.3",  cis:"CIS 3",  critical:true,  cost:75000,  reduction:1.4 },
+    { id:"c9", name:"Separation of Duties",                    nist:"PR.AC-4", iso:"A.6.1.2",  cis:"CIS 6",  critical:false, cost:15000,  reduction:0.7 },
+    { id:"c10",name:"Access Review & Recertification",         nist:"PR.AC-1", iso:"A.9.2.5",  cis:"CIS 5",  critical:false, cost:25000,  reduction:0.8 },
+  ],
+  "Third-Party / Vendor": [
+    { id:"c11",name:"Third-Party Risk Assessments",            nist:"ID.SC-2", iso:"A.15.2.1", cis:"CIS 15", critical:true,  cost:50000,  reduction:1.4 },
+    { id:"c12",name:"Vendor Contractual Security Requirements",nist:"ID.SC-3", iso:"A.15.1.2", cis:"CIS 15", critical:true,  cost:20000,  reduction:1.1 },
+    { id:"c13",name:"Network Segmentation",                    nist:"PR.AC-5", iso:"A.13.1.3", cis:"CIS 12", critical:true,  cost:100000, reduction:1.5 },
+    { id:"c14",name:"Continuous Vendor Monitoring",            nist:"DE.CM-6", iso:"A.15.2.1", cis:"CIS 15", critical:false, cost:40000,  reduction:0.9 },
+  ],
+  "Nation-State Actor": [
+    { id:"c15",name:"Zero Trust Architecture",                 nist:"PR.AC-3", iso:"A.9.1.2",  cis:"CIS 6",  critical:true,  cost:250000, reduction:1.8 },
+    { id:"c16",name:"Threat Intelligence Program",             nist:"ID.RA-2", iso:"A.6.1.4",  cis:"CIS 17", critical:true,  cost:90000,  reduction:1.2 },
+    { id:"c17",name:"Advanced Threat Protection (ATP)",        nist:"DE.CM-1", iso:"A.12.2.1", cis:"CIS 10", critical:true,  cost:120000, reduction:1.5 },
+    { id:"c18",name:"Incident Response Plan (tested)",         nist:"RS.RP-1", iso:"A.16.1.1", cis:"CIS 17", critical:true,  cost:50000,  reduction:1.1 },
+  ],
+  "AI / Shadow-AI Exposure": [
+    { id:"c23",name:"AI Access Controls & Authentication",     nist:"PR.AC-1", iso:"A.9.1.1",  cis:"CIS 6",  critical:true,  cost:60000,  reduction:1.6 },
+    { id:"c24",name:"AI Governance Policy & Acceptable Use",   nist:"GV.PO-1", iso:"A.5.1.1",  cis:"CIS 14", critical:true,  cost:40000,  reduction:1.3 },
+    { id:"c25",name:"Shadow-AI Discovery & Monitoring",        nist:"DE.CM-1", iso:"A.12.4.1", cis:"CIS 8",  critical:true,  cost:55000,  reduction:1.4 },
+    { id:"c26",name:"Model & Training-Data Security",          nist:"PR.DS-1", iso:"A.8.2.1",  cis:"CIS 3",  critical:false, cost:80000,  reduction:0.9 },
+    { id:"c27",name:"AI Vendor / Third-Party Review",          nist:"ID.SC-2", iso:"A.15.2.1", cis:"CIS 15", critical:false, cost:35000,  reduction:0.7 },
+  ],
+  "Natural Disaster / Physical": [
+    { id:"c19",name:"Business Continuity Plan (BCP)",          nist:"PR.IP-9", iso:"A.17.1.1", cis:"CIS 11", critical:true,  cost:60000,  reduction:1.4 },
+    { id:"c20",name:"Offsite / Cloud Backups",                 nist:"PR.IP-4", iso:"A.12.3.1", cis:"CIS 11", critical:true,  cost:45000,  reduction:1.6 },
+    { id:"c21",name:"Disaster Recovery Plan (DRP)",            nist:"RC.RP-1", iso:"A.17.1.2", cis:"CIS 11", critical:true,  cost:70000,  reduction:1.4 },
+    { id:"c22",name:"Physical Access Controls",                nist:"PR.AC-2", iso:"A.11.1.1", cis:"CIS 13", critical:false, cost:35000,  reduction:0.8 },
+  ],
+};
+
+/* ════════════════════════════════════════════════════════════════════════════
+   MONTE CARLO ENGINE  ·  seeded PRNG + Beta-PERT sampling
+═══════════════════════════════════════════════════════════════════════════════ */
+const ITER = 8000;       // iterations for the loss distribution
+
+const clamp = (x,lo,hi) => Math.max(lo, Math.min(hi, x));
+
+// Deterministic PRNG so results are stable across re-renders (mulberry32)
+function makeRng(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function hashSeed(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+function gaussian(rng) {
+  let u = 0, v = 0;
+  while (u === 0) u = rng();
+  while (v === 0) v = rng();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+// Gamma(shape, 1) — Marsaglia & Tsang
+function sampleGamma(rng, k) {
+  if (k < 1) return sampleGamma(rng, 1 + k) * Math.pow(rng(), 1 / k);
+  const d = k - 1 / 3, c = 1 / Math.sqrt(9 * d);
+  while (true) {
+    let x, v;
+    do { x = gaussian(rng); v = 1 + c * x; } while (v <= 0);
+    v = v * v * v;
+    const u = rng();
+    if (u < 1 - 0.0331 * x * x * x * x) return d * v;
+    if (Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))) return d * v;
+  }
+}
+function sampleBeta(rng, a, b) {
+  const x = sampleGamma(rng, a), y = sampleGamma(rng, b);
+  return x / (x + y);
+}
+// Beta-PERT sampler (lambda = 4, the FAIR-standard weighting toward the mode)
+function samplePert(rng, min, mode, max) {
+  if (max <= min) return min;
+  mode = clamp(mode, min, max);
+  const alpha = 1 + 4 * (mode - min) / (max - min);
+  const beta  = 1 + 4 * (max - mode) / (max - min);
+  return min + sampleBeta(rng, alpha, beta) * (max - min);
+}
+
+// Confidence drives how wide each input's range is around its most-likely value
+const SPREAD = { High: 0.25, Medium: 0.5, Low: 0.85 };
+const rangeOf = (mode, conf) => {
+  const s = SPREAD[conf] ?? 0.5;
+  return { min: Math.max(0, mode * (1 - s)), mode, max: mode * (1 + s) };
+};
+// Vulnerability = P(threat event becomes a loss event), from TCap vs Control Strength
+const vulnMode = (tcap, cs) => clamp((tcap - cs + 5) / 10, 0.02, 0.98);
+// Expected value of the vulnerability Beta-PERT, computed analytically (mean = (min+4·mode+max)/6).
+// Honors the same clamping the simulation uses, so a clamped ceiling yields a true, noise-free value.
+function expectedVuln(tcap, cs, conf) {
+  const s = SPREAD[conf] ?? 0.5;
+  const vM = vulnMode(tcap, cs);
+  const min = clamp(vM * (1 - s), 0.01, 0.99);
+  const max = clamp(vM * (1 + s), 0.01, 0.99);
+  return (min + 4 * vM + max) / 6;
+}
+
+function simulate({ tef, tcap, cs, plm, slm, slef, conf, iterations, seed }) {
+  const rng = makeRng(seed);
+  const s = SPREAD[conf] ?? 0.5;
+  const tefR = rangeOf(tef, conf);
+  const vM = vulnMode(tcap, cs);
+  const vR = { min: clamp(vM * (1 - s), 0.01, 0.99), mode: vM, max: clamp(vM * (1 + s), 0.01, 0.99) };
+  const plmR = rangeOf(plm, conf);
+  const slmR = rangeOf(slm, conf);
+  const out = new Float64Array(iterations);
+  for (let i = 0; i < iterations; i++) {
+    const tefS = samplePert(rng, tefR.min, tefR.mode, tefR.max);
+    const vS   = samplePert(rng, vR.min, vR.mode, vR.max);
+    const lef  = tefS * vS;
+    const primary = samplePert(rng, plmR.min, plmR.mode, plmR.max);
+    const secondary = rng() < slef ? samplePert(rng, slmR.min, slmR.mode, slmR.max) : 0;
+    out[i] = lef * (primary + secondary);
+  }
+  out.sort();
+  return out;
+}
+const mean = arr => { let s = 0; for (let i = 0; i < arr.length; i++) s += arr[i]; return s / arr.length; };
+const pctl = (sorted, p) => sorted[clamp(Math.floor(p * sorted.length), 0, sorted.length - 1)];
+
+function buildLEC(sorted) {
+  const n = sorted.length, maxV = pctl(sorted, 0.98), steps = 44, pts = [];
+  for (let i = 0; i <= steps; i++) {
+    const loss = (maxV / steps) * i;
+    let lo = 0, hi = n;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (sorted[m] < loss) lo = m + 1; else hi = m; }
+    pts.push({ loss, prob: ((n - lo) / n) * 100 });
+  }
+  return pts;
+}
+
+/* Full result bundle for one risk scenario */
+function calcFAIR(risk, revenue) {
+  const assetCount = Math.max(1, (risk.assetTypes || []).length);
+  const assetFactor = 1 + 0.2 * (assetCount - 1); // each extra asset in scope widens the blast radius
+  const seed = hashSeed(`${risk.id}|${risk.tef}|${risk.tcap}|${risk.cs}|${risk.plm}|${risk.slm}|${risk.slef}|${risk.conf}|${assetCount}`);
+  const base = { tef: risk.tef, tcap: risk.tcap, plm: risk.plm * assetFactor, slm: risk.slm * assetFactor, slef: risk.slef, conf: risk.conf };
+
+  const residual = simulate({ ...base, cs: risk.cs, iterations: ITER, seed });
+  const inherent = simulate({ ...base, cs: 1, iterations: ITER, seed: seed ^ 0x9e3779b9 });
+
+  const meanALE = mean(residual);
+  const inherentALE = mean(inherent);
+  const p10 = pctl(residual, 0.10);
+  const p50 = pctl(residual, 0.50);
+  const p90 = pctl(residual, 0.90);
+  const p95 = pctl(residual, 0.95);
+  const reductionPct = inherentALE > 0 ? ((inherentALE - meanALE) / inherentALE) * 100 : 0;
+  const revImpactPct = (meanALE / revenue) * 100;
+  const lec = buildLEC(residual);
+
+  return { meanALE, inherentALE, p10, p50, p90, p95, reductionPct, revImpactPct, lec, vulnMode: vulnMode(risk.tcap, risk.cs), seed, base, assetFactor, assetCount };
+}
+
+/* Marginal value of each not-yet-implemented control.
+   Computed analytically from how the control shifts expected vulnerability —
+   exact and noise-free, so a control with no real effect reads a true $0. */
+function calcROI(risk, controls, result) {
+  const baselineMean = result.meanALE;
+  const vNow = expectedVuln(risk.tcap, risk.cs, risk.conf);
+  return controls
+    .filter(c => !risk.activeControls.includes(c.id))
+    .map(c => {
+      const newCs = Math.min(10, risk.cs + c.reduction);
+      const vNew = expectedVuln(risk.tcap, newCs, risk.conf);
+      const lossReduction = vNow > 0 ? Math.max(0, baselineMean * (1 - vNew / vNow)) : 0;
+      return { ...c, lossReduction };
+    })
+    .sort((a, b) => b.lossReduction - a.lossReduction);
+}
+
+/* Risk treatment measured against the org's stated risk appetite */
+function getTreatment({ meanALE, p95, revenue, appetitePct, controlGapCount, topControl }) {
+  const appetite = revenue * (appetitePct / 100);
+  if (p95 > revenue * 0.25 && controlGapCount >= 2) {
+    return { action:"Avoid", color:"#dc2626", bg:"rgba(220,38,38,0.08)", border:"rgba(220,38,38,0.25)", icon:"🚫",
+      rationale:`A bad year (95th percentile) could exceed 25% of annual revenue (${fmt(p95)}) while ${controlGapCount} critical controls are missing. Exposure of this scale warrants reviewing whether the activity generating it should continue in its current form.`, roi:null };
+  }
+  if (meanALE > appetite && controlGapCount >= 1) {
+    return { action:"Mitigate", color:"#f59e0b", bg:"rgba(245,158,11,0.08)", border:"rgba(245,158,11,0.25)", icon:"🛡️",
+      rationale:`Expected annual loss (${fmt(meanALE)}) is above the stated appetite of ${fmt(appetite)} and fixable control gaps exist. Targeted control investment is the most direct lever.`,
+      roi: topControl ? `Best first move: ${topControl.name} — modeled to cut expected annual loss by ${fmt(topControl.lossReduction)}/yr for ~${fmt(topControl.cost)}/yr.` : null };
+  }
+  if (meanALE > appetite) {
+    return { action:"Transfer", color:"#8b5cf6", bg:"rgba(139,92,246,0.08)", border:"rgba(139,92,246,0.25)", icon:"📋",
+      rationale:`Expected loss (${fmt(meanALE)}) is above appetite (${fmt(appetite)}), but no critical control gaps remain — controls are reasonably mature. The residual is a strong candidate for cyber insurance or contractual transfer.`,
+      roi:`Indicative cyber-insurance premium: ${fmt(meanALE*0.04)}–${fmt(meanALE*0.08)}/yr to cover toward the ${fmt(p95)} bad-year tail.` };
+  }
+  return { action:"Accept", color:"#22c55e", bg:"rgba(34,197,94,0.08)", border:"rgba(34,197,94,0.25)", icon:"✅",
+    rationale:`Expected annual loss (${fmt(meanALE)}) sits within the stated appetite (${fmt(appetite)}). Formally document acceptance and review when the threat landscape changes.`,
+    roi:`Additional controls would likely cost more than the loss they prevent. Accept and review annually.` };
+}
+
+function generateAssumptions({ risk, org, result, controlGapCount }) {
+  const ind = INDUSTRY_DATA[org.industry];
+  const assetList = joinList(risk.assetTypes || []) || "the selected assets";
+  return [
+    { label:"Method", text:`Annual loss modeled with a ${ITER.toLocaleString()}-iteration Monte Carlo simulation using Beta-PERT distributions on each FAIR factor. Output is a distribution, not a single point estimate.`, confidence:"High" },
+    { label:"Input Confidence", text:`All ranges set to "${risk.conf}" confidence — inputs were spread ±${(SPREAD[risk.conf]*100).toFixed(0)}% around each most-likely value. Lower confidence = wider, more conservative tails.`, confidence: risk.conf },
+    { label:"Threat Event Frequency", text:`TEF most-likely ${risk.tef}/yr for ${risk.threatType} against ${assetList}. Validate against threat-intel and incident history.`, confidence: risk.tef <= 12 ? "Medium" : "Low" },
+    { label:"Vulnerability", text:`Derived from Threat Capability (${risk.tcap}/10) vs Control Strength (${risk.cs}/10) → ~${(result.vulnMode*100).toFixed(0)}% modeled likelihood a threat event becomes a loss event.`, confidence: risk.tcap >= 7 ? "Low" : "Medium" },
+    { label:"Loss Magnitude", text:`Primary loss most-likely ${fmt(risk.plm)} (recovery, downtime, IR). Secondary loss ${fmt(risk.slm)} (fines, legal, reputation) applied with ${(risk.slef*100).toFixed(0)}% likelihood per event. Validate with finance & legal.`, confidence:"Medium" },
+    { label:"Asset Scope", text: result.assetCount > 1 ? `${result.assetCount} asset types in scope (${assetList}). Loss magnitude scaled ×${result.assetFactor.toFixed(2)} to reflect a wider blast radius when one event can affect several assets at once.` : `Single asset type in scope (${assetList}) — no blast-radius scaling applied.`, confidence: result.assetCount > 2 ? "Low" : "Medium" },
+    { label:"Control Gaps", text: controlGapCount > 0 ? `${controlGapCount} critical control gap(s) — residual exposure may be understated until closed.` : `No critical control gaps identified at assessment time.`, confidence: controlGapCount > 1 ? "Low" : "High" },
+    { label:"Benchmark", text:`IBM Cost of a Data Breach 2025 used for context (${ind?.name}: ${fmt(ind?.avgBreachCost)} avg${ind?.exact ? "" : ", calibrated estimate"}). Re-validate annually.`, confidence:"High" },
+    { label:"Control Economics", text:`Control costs are illustrative annualized defaults (editable in the investment panel); risk-reduction is modeled as an increase to Control Strength. Replace with vendor quotes before any real decision.`, confidence:"Low" },
+  ];
+}
+
+/* ── Formatting helpers ───────────────────────────────────────────────────── */
+const fmt = n => {
+  if (n == null || isNaN(n)) return "$0";
+  if (n >= 1_000_000) return `$${(n/1_000_000).toFixed(1)}M`;
+  if (n >= 1_000)     return `$${(n/1_000).toFixed(0)}K`;
+  return `$${Math.round(n)}`;
+};
+const fmtFull = n => `$${Math.round(n).toLocaleString()}`;
+const PRIORITY_COLORS = { High:"#ef4444", Medium:"#f59e0b", Low:"#22c55e" };
+const CONF_COLORS = { High:"#22c55e", Medium:"#f59e0b", Low:"#ef4444" };
+const priorityOf = (meanALE, appetiteDollar) =>
+  meanALE > appetiteDollar * 3 ? "High" : meanALE > appetiteDollar ? "Medium" : "Low";
+
+// Natural-language list join: ["a","b","c"] -> "a, b, and c"
+const joinList = a =>
+  !a || a.length === 0 ? "" :
+  a.length === 1 ? a[0] :
+  a.length === 2 ? `${a[0]} and ${a[1]}` :
+  `${a.slice(0, -1).join(", ")}, and ${a[a.length - 1]}`;
+
+// Template-based scenario description (portable — no external API, works wherever you host it)
+function suggestDescription(risk, org) {
+  const ind = INDUSTRY_DATA[org?.industry];
+  const assets = joinList((risk.assetTypes || []).map(a => a.toLowerCase())) || "key assets";
+  const templ = {
+    "External Attacker": `an external adversary attempts to compromise ${assets} to gain unauthorized access, move laterally, and exfiltrate data or disrupt operations`,
+    "Insider Threat": `an insider with legitimate access misuses it against ${assets}, whether maliciously or through negligence`,
+    "Third-Party / Vendor": `a compromise or weakness at a vendor or supplier propagates into ${assets} through the supply chain`,
+    "Nation-State Actor": `a well-resourced, persistent state-sponsored actor targets ${assets} for espionage or strategic disruption`,
+    "AI / Shadow-AI Exposure": `unsanctioned or poorly governed AI tools interact with ${assets}, risking data leakage, model abuse, or exposure of sensitive information`,
+    "Natural Disaster / Physical": `a physical or environmental event disrupts ${assets}, threatening availability and business continuity`,
+  };
+  const body = templ[risk.threatType] || `a ${(risk.threatType || "").toLowerCase()} scenario affecting ${assets}`;
+  const dt = org?.dataTypes || [];
+  let reg = "";
+  if (dt.includes("PHI")) reg = " Exposure of protected health information would trigger HIPAA breach-notification duties and regulatory penalties.";
+  else if (dt.includes("PCI / Card Data")) reg = " Compromise of cardholder data carries PCI-DSS liability and card-brand fines.";
+  else if (dt.includes("PII")) reg = " Loss of personal data triggers breach-notification obligations and potential regulatory fines.";
+  const indClause = ind ? ` In the ${ind.name.toLowerCase()} sector, the average breach costs around ${fmt(ind.avgBreachCost)} (IBM 2025).` : "";
+  const lead = risk.name?.trim() ? `${risk.name.trim()} — ` : "";
+  return `${lead}In this scenario, ${body}.${indClause}${reg}`.trim();
+}
+
+
+/* uuid with fallback so it works on file:// and older browsers */
+function uuid(){ try { if (typeof crypto!=="undefined" && crypto.randomUUID) return crypto.randomUUID(); } catch(e){} return "id-"+Date.now()+"-"+Math.floor(Math.random()*1e9); }
+const defaultRisk = () => ({ id: uuid(), name:"", threatType:"", assetTypes:[], description:"", tef:4, tcap:5, cs:5, plm:50000, slm:100000, slef:0.5, conf:"Medium", activeControls:[] });
+
+/* ===================== STATE ===================== */
+const state = { step:0, org:{ industry:"", revenue:"", dataTypes:[], appetite:1 }, risks:[], current: defaultRisk() };
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m])); }
+function setStep(n){ state.step=n; render(true); }
+function rerender(){ render(false); }
+const $ = id => document.getElementById(id);
+
+/* ===================== SLIDER HELPER ===================== */
+function sliderHTML(c){
+  return '<div class="field"><div class="field-top"><span class="l">'+c.label+'</span>'+
+    '<span class="vw">'+(c.prefix?'<span class="pfx">'+c.prefix+'</span>':'')+
+    '<input type="number" class="numbox" id="'+c.id+'-num" min="'+c.min+'" max="'+c.max+'" step="'+c.step+'" value="'+c.value+'">'+
+    (c.unit?'<span class="unit">'+c.unit+'</span>':'')+'</span></div>'+
+    '<input type="range" class="rng" id="'+c.id+'-rng" min="'+c.min+'" max="'+c.max+'" step="'+c.step+'" value="'+c.value+'">'+
+    '<div class="field-bot"><p class="hint">'+c.hint+'</p><span class="cap" id="'+c.id+'-cap">= '+c.format(c.value)+'</span></div></div>';
+}
+function wireSlider(c){
+  const rng=$(c.id+'-rng'), num=$(c.id+'-num'), cap=$(c.id+'-cap');
+  rng.addEventListener('input', e=>{ const v=Number(e.target.value); c.set(v); num.value=v; cap.textContent='= '+c.format(v); if(c.onLive)c.onLive(v); });
+  num.addEventListener('change', e=>{ let v=Number(e.target.value); if(e.target.value===''||isNaN(v))v=c.get(); v=clamp(v,c.min,c.max); c.set(v); num.value=v; rng.value=v; cap.textContent='= '+c.format(v); if(c.onLive)c.onLive(v); });
+  num.addEventListener('keydown', e=>{ if(e.key==='Enter') e.target.blur(); });
+}
+
+/* ===================== CHARTS (hand-drawn SVG) ===================== */
+function lecSVG(lec, meanALE, appetiteDollar){
+  const W=700,H=240,padL=46,padR=14,padT=10,padB=28,pw=W-padL-padR,ph=H-padT-padB;
+  const xMax=lec[lec.length-1].loss||1;
+  const xT=v=>padL+(v/xMax)*pw, yT=p=>padT+(1-p/100)*ph;
+  let d='M '+xT(lec[0].loss).toFixed(1)+' '+yT(lec[0].prob).toFixed(1);
+  for(let i=1;i<lec.length;i++) d+=' L '+xT(lec[i].loss).toFixed(1)+' '+yT(lec[i].prob).toFixed(1);
+  const area=d+' L '+xT(xMax).toFixed(1)+' '+yT(0).toFixed(1)+' L '+xT(0).toFixed(1)+' '+yT(0).toFixed(1)+' Z';
+  let yt='';for(let i=0;i<=4;i++){const p=i*25,y=yT(p);yt+='<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="#1e293b" stroke-dasharray="2 4"/><text x="'+(padL-6)+'" y="'+(y+3)+'" fill="#64748b" font-size="10" text-anchor="end">'+p+'%</text>';}
+  let xt='';for(let i=0;i<=4;i++){const v=xMax*i/4,x=xT(v);xt+='<text x="'+x+'" y="'+(H-8)+'" fill="#64748b" font-size="10" text-anchor="middle">'+fmt(v)+'</text>';}
+  let refs='';
+  if(appetiteDollar>0&&appetiteDollar<xMax){const x=xT(appetiteDollar);refs+='<line x1="'+x+'" y1="'+padT+'" x2="'+x+'" y2="'+(padT+ph)+'" stroke="#22c55e" stroke-dasharray="4 3"/><text x="'+(x+3)+'" y="'+(padT+10)+'" fill="#22c55e" font-size="10">Appetite</text>';}
+  if(meanALE<xMax){const x=xT(meanALE);refs+='<line x1="'+x+'" y1="'+padT+'" x2="'+x+'" y2="'+(padT+ph)+'" stroke="#38bdf8" stroke-dasharray="4 3"/><text x="'+(x+3)+'" y="'+(padT+22)+'" fill="#38bdf8" font-size="10">Avg</text>';}
+  return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="display:block"><defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#38bdf8" stop-opacity="0.35"/><stop offset="100%" stop-color="#38bdf8" stop-opacity="0.02"/></linearGradient></defs>'+yt+xt+'<path d="'+area+'" fill="url(#lg)"/><path d="'+d+'" fill="none" stroke="#38bdf8" stroke-width="2"/>'+refs+'</svg>';
+}
+function barSVG(items){
+  const W=700,H=240,padL=50,padR=10,padT=10,padB=42,pw=W-padL-padR,ph=H-padT-padB;
+  let max=1; items.forEach(i=>{max=Math.max(max,i.inherent,i.residual);});
+  const yT=v=>padT+(1-v/max)*ph, gW=pw/items.length, bW=Math.min(38,gW*0.3);
+  let yt='';for(let i=0;i<=3;i++){const v=max*i/3,y=yT(v);yt+='<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="#1e293b"/><text x="'+(padL-6)+'" y="'+(y+3)+'" fill="#64748b" font-size="10" text-anchor="end">'+fmt(v)+'</text>';}
+  let bars='';
+  items.forEach((it,idx)=>{const cx=padL+gW*idx+gW/2,x1=cx-bW-2,x2=cx+2;
+    bars+='<rect x="'+x1+'" y="'+yT(it.inherent)+'" width="'+bW+'" height="'+(padT+ph-yT(it.inherent))+'" fill="#ef4444" opacity="0.5" rx="3"/>';
+    bars+='<rect x="'+x2+'" y="'+yT(it.residual)+'" width="'+bW+'" height="'+(padT+ph-yT(it.residual))+'" fill="'+it.color+'" opacity="0.9" rx="3"/>';
+    const nm=it.name.length>14?it.name.slice(0,14)+'…':it.name;
+    bars+='<text x="'+cx+'" y="'+(H-24)+'" fill="#64748b" font-size="10" text-anchor="middle">'+esc(nm)+'</text>';});
+  return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="display:block">'+yt+bars+'</svg>';
+}
+
+/* ===================== SCREENS ===================== */
+function topbarHTML(){
+  let right='';
+  if(state.step===4 && state.risks.length>0) right='<span class="badge">'+state.risks.length+' scenario'+(state.risks.length>1?'s':'')+' assessed</span>';
+  return '<div><div class="eyebrow"><span class="dot"></span>FAIR · MONTE CARLO · GRC PORTFOLIO</div><h1>Cyber Risk Quantification Tool</h1></div>'+right;
+}
+function stepsHTML(){
+  const names=['Org Setup','Risk Scenario','FAIR Inputs','Controls','Results'];
+  const cur=state.step;
+  return names.map((n,i)=>'<div class="step '+((i<=cur)?'on ':'')+(i===cur?'cur':(i<cur?'done':''))+'"><div class="bar"></div><div class="nm">'+n+'</div></div>').join('');
+}
+
+function renderOrg(app){
+  const o=state.org;
+  const appDollar=o.revenue?o.revenue*(o.appetite/100):0;
+  const inds=Object.keys(INDUSTRY_DATA).map(k=>'<option value="'+k+'"'+(o.industry===k?' selected':'')+'>'+INDUSTRY_DATA[k].name+'</option>').join('');
+  const revs=REVENUE_RANGES.map(r=>'<option value="'+r.value+'"'+(String(o.revenue)===String(r.value)?' selected':'')+'>'+r.label+'</option>').join('');
+  const dts=DATA_TYPES.map(d=>'<button class="chip '+(o.dataTypes.includes(d)?'sel':'')+'" data-dt="'+esc(d)+'">'+esc(d)+'</button>').join('');
+  app.innerHTML='<div class="card"><h2 class="h2">Organization Context</h2>'+
+    '<p class="sub">Sets the financial frame. Benchmarks are calibrated to IBM Cost of a Data Breach 2025, and your risk appetite drives every treatment recommendation.</p>'+
+    '<label class="lbl">Industry</label><select id="ind"><option value="">— Select industry —</option>'+inds+'</select>'+
+    '<label class="lbl">Annual Revenue (approximate)</label><select id="rev"><option value="">— Select range —</option>'+revs+'</select>'+
+    '<label class="lbl">Risk Appetite <span class="muted">— annual loss the business is willing to tolerate</span></label>'+
+    sliderHTML({id:'appetite',label:'',hint:'A governance decision: anything above this threshold gets escalated for treatment.',min:0.1,max:10,step:0.1,value:o.appetite,unit:'%',format:v=>v+'% of revenue'+(o.revenue?' ≈ '+fmt(o.revenue*(v/100)):'')})+
+    '<label class="lbl">Data Types Handled <span class="muted">(select all that apply)</span></label><div class="chips">'+dts+'</div>'+
+    '<div class="row" style="justify-content:flex-end"><button class="btn btn-primary" id="next" '+(o.industry&&o.revenue?'':'disabled')+'>Continue →</button></div></div>';
+  $('ind').addEventListener('change',e=>{o.industry=e.target.value;rerender();});
+  $('rev').addEventListener('change',e=>{o.revenue=Number(e.target.value);rerender();});
+  wireSlider({id:'appetite',min:0.1,max:10,get:()=>o.appetite,set:v=>{o.appetite=v;},format:v=>v+'% of revenue'+(o.revenue?' ≈ '+fmt(o.revenue*(v/100)):'')});
+  app.querySelectorAll('[data-dt]').forEach(b=>b.addEventListener('click',()=>{const d=b.getAttribute('data-dt');o.dataTypes=o.dataTypes.includes(d)?o.dataTypes.filter(x=>x!==d):o.dataTypes.concat([d]);rerender();}));
+  $('next').addEventListener('click',()=>{ if(o.industry&&o.revenue) setStep(1); });
+}
+
+function renderScenario(app){
+  const r=state.current, o=state.org;
+  const valid=()=>r.name.trim()&&r.threatType&&r.assetTypes.length>0;
+  const canFill=r.threatType&&r.assetTypes.length>0;
+  const threats=THREAT_TYPES.map(t=>'<option value="'+esc(t)+'"'+(r.threatType===t?' selected':'')+'>'+esc(t)+'</option>').join('');
+  const assets=ASSET_TYPES.map(a=>'<button class="chip '+(r.assetTypes.includes(a)?'sel':'')+'" data-as="'+esc(a)+'">'+esc(a)+'</button>').join('');
+  const note=r.assetTypes.length>1?'<p class="hint" style="margin-bottom:20px">'+r.assetTypes.length+' assets in scope → loss magnitude will be scaled ×'+(1+0.2*(r.assetTypes.length-1)).toFixed(2)+' for the wider blast radius.</p>':'<div style="margin-bottom:20px"></div>';
+  app.innerHTML='<div class="card"><h2 class="h2">Risk Scenario</h2>'+
+    '<p class="sub">Define the threat scenario you want to quantify. A single event can put several asset types at risk at once — select all that apply.</p>'+
+    '<label class="lbl">Risk Name</label><input type="text" id="nm" placeholder="e.g. Ransomware via phishing email" value="'+esc(r.name)+'">'+
+    '<label class="lbl">Threat Type</label><select id="th"><option value="">— Select threat type —</option>'+threats+'</select>'+
+    '<label class="lbl">Assets at Risk <span class="muted">(select all that apply)</span></label><div class="chips" style="margin-bottom:8px">'+assets+'</div>'+note+
+    '<div class="field-top"><span class="l">Brief Description <span class="muted">(optional)</span></span><button class="btn" id="fill" style="padding:4px 12px;font-size:11px;background:transparent;border:1px solid '+(canFill?'#334155':'#1e293b')+';color:'+(canFill?'#38bdf8':'#475569')+'" '+(canFill?'':'disabled')+'>✨ Auto-fill</button></div>'+
+    '<textarea id="desc" rows="3" placeholder="Describe the scenario, or tap Auto-fill…">'+esc(r.description)+'</textarea>'+
+    '<div class="row"><button class="btn btn-secondary" id="back">← Back</button><button class="btn btn-primary" id="next" '+(valid()?'':'disabled')+'>Continue →</button></div></div>';
+  $('nm').addEventListener('input',e=>{r.name=e.target.value;$('next').disabled=!valid();});
+  $('th').addEventListener('change',e=>{r.threatType=e.target.value;r.activeControls=[];rerender();});
+  app.querySelectorAll('[data-as]').forEach(b=>b.addEventListener('click',()=>{const a=b.getAttribute('data-as');r.assetTypes=r.assetTypes.includes(a)?r.assetTypes.filter(x=>x!==a):r.assetTypes.concat([a]);rerender();}));
+  $('desc').addEventListener('input',e=>{r.description=e.target.value;});
+  if(canFill)$('fill').addEventListener('click',()=>{r.description=suggestDescription(r,o);$('desc').value=r.description;});
+  $('back').addEventListener('click',()=>setStep(state.risks.length>0?4:0));
+  $('next').addEventListener('click',()=>{ if(valid()) setStep(2); });
+}
+
+function renderFair(app){
+  const r=state.current;
+  const sc=r.assetTypes.length>1?' · loss ×'+(1+0.2*(r.assetTypes.length-1)).toFixed(2)+' (blast radius)':'';
+  const conf=['High','Medium','Low'].map(c=>'<button class="btn" data-conf="'+c+'" style="flex:1;padding:10px;background:'+(r.conf===c?'rgba(56,189,248,.12)':'transparent')+';border:1px solid '+(r.conf===c?'#38bdf8':'#334155')+';color:'+(r.conf===c?'#38bdf8':'#64748b')+';font-size:13px">'+c+'<span style="display:block;font-size:10px;font-weight:500;opacity:.8">±'+(SPREAD[c]*100).toFixed(0)+'% spread</span></button>').join('');
+  app.innerHTML='<div class="card"><h2 class="h2">FAIR Risk Inputs</h2>'+
+    '<p class="sub">Set the most-likely value for each FAIR factor — drag the slider or type an exact number. Confidence controls how wide the simulation spreads each input.</p>'+
+    '<div class="box"><p class="k">Scenario</p><p style="font-size:14px;font-weight:700;color:#f1f5f9;margin:2px 0 0">'+esc(r.name)+'</p><p class="hint" style="margin-top:4px">'+esc(r.threatType)+' · '+esc(joinList(r.assetTypes))+sc+'</p></div>'+
+    '<label class="lbl">Estimate Confidence</label><div class="row" style="gap:8px;margin-bottom:24px">'+conf+'</div>'+
+    sliderHTML({id:'tef',label:'Threat Event Frequency (TEF)',hint:'How many times per year could this threat realistically attempt this asset?',min:0.1,max:52,step:0.1,value:r.tef,unit:'× / yr',format:v=>v+'× / yr'})+
+    sliderHTML({id:'tcap',label:'Threat Capability (TCAP)',hint:'How capable is the actor? (1 = script kiddie, 10 = nation-state)',min:1,max:10,step:1,value:r.tcap,unit:'/ 10',format:v=>v+' / 10'})+
+    sliderHTML({id:'cs',label:'Control Strength (CS)',hint:'How strong are current controls overall? (1 = minimal, 10 = mature & layered)',min:1,max:10,step:1,value:r.cs,unit:'/ 10',format:v=>v+' / 10'})+
+    '<div style="height:1px;background:#1e293b;margin:4px 0 20px"></div>'+
+    sliderHTML({id:'plm',label:'Primary Loss Magnitude (PLM)',hint:'Direct cost per event: recovery, downtime, incident response.',min:1000,max:5000000,step:1000,value:r.plm,prefix:'$',format:fmt})+
+    sliderHTML({id:'slm',label:'Secondary Loss Magnitude (SLM)',hint:'Indirect cost: fines, lawsuits, reputation, churn.',min:0,max:10000000,step:5000,value:r.slm,prefix:'$',format:fmt})+
+    sliderHTML({id:'slef',label:'Secondary Loss Likelihood (SLEF)',hint:'Chance a loss event also triggers secondary losses. Modeled probabilistically, per FAIR.',min:0,max:100,step:1,value:Math.round(r.slef*100),unit:'%',format:v=>v+'%'})+
+    '<div class="row"><button class="btn btn-secondary" id="back">← Back</button><button class="btn btn-primary" id="next">Control Mapping →</button></div></div>';
+  app.querySelectorAll('[data-conf]').forEach(b=>b.addEventListener('click',()=>{r.conf=b.getAttribute('data-conf');rerender();}));
+  wireSlider({id:'tef',min:0.1,max:52,get:()=>r.tef,set:v=>{r.tef=v;},format:v=>v+'× / yr'});
+  wireSlider({id:'tcap',min:1,max:10,get:()=>r.tcap,set:v=>{r.tcap=v;},format:v=>v+' / 10'});
+  wireSlider({id:'cs',min:1,max:10,get:()=>r.cs,set:v=>{r.cs=v;},format:v=>v+' / 10'});
+  wireSlider({id:'plm',min:1000,max:5000000,get:()=>r.plm,set:v=>{r.plm=v;},format:fmt});
+  wireSlider({id:'slm',min:0,max:10000000,get:()=>r.slm,set:v=>{r.slm=v;},format:fmt});
+  wireSlider({id:'slef',min:0,max:100,get:()=>Math.round(r.slef*100),set:v=>{r.slef=v/100;},format:v=>v+'%'});
+  $('back').addEventListener('click',()=>setStep(1));
+  $('next').addEventListener('click',()=>setStep(3));
+}
+
+function renderControls(app){
+  const r=state.current;
+  const controls=CONTROL_MAPPINGS[r.threatType]||[];
+  const gaps=controls.filter(c=>c.critical&&!r.activeControls.includes(c.id));
+  const list=controls.map(c=>{const on=r.activeControls.includes(c.id);
+    return '<div class="ctrl '+(on?'on':'')+'" data-c="'+c.id+'"><div style="margin-bottom:6px"><span class="cbox">'+(on?'✓':'')+'</span> <span style="font-size:13px;font-weight:700;color:'+(on?'#f1f5f9':'#94a3b8')+'">'+esc(c.name)+'</span> '+(c.critical?'<span class="crit">CRITICAL</span>':'')+'</div><div style="margin-left:26px;display:flex;gap:8px;flex-wrap:wrap"><span class="tag">NIST: '+c.nist+'</span><span class="tag">ISO: '+c.iso+'</span><span class="tag">CIS: '+c.cis+'</span></div></div>';}).join('');
+  const warn=gaps.length>0?'<div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:10px;padding:12px 16px;margin-bottom:20px"><p style="font-size:12px;color:#ef4444;font-weight:700;margin:0">⚠️ '+gaps.length+' Critical Control Gap'+(gaps.length>1?'s':'')+' Identified</p><p style="font-size:12px;color:#94a3b8;margin:4px 0 0">Missing critical controls raise residual risk and shape your treatment call.</p></div>':'';
+  app.innerHTML='<div class="card"><h2 class="h2">Control Mapping</h2>'+
+    '<p class="sub">Check the controls already in place. Each is mapped to NIST CSF, ISO 27001, and CIS — the gaps drive your treatment and investment recommendations.</p>'+
+    '<div class="box"><p class="k">Threat type</p><p style="font-size:14px;font-weight:700;color:#f1f5f9;margin:2px 0 0">'+esc(r.threatType)+'</p></div>'+warn+
+    '<div>'+list+'</div>'+
+    '<div class="row" style="margin-top:14px"><button class="btn btn-secondary" id="back">← Back</button><button class="btn btn-primary" id="calc">Calculate Risk →</button></div></div>';
+  app.querySelectorAll('[data-c]').forEach(d=>d.addEventListener('click',()=>{const id=d.getAttribute('data-c');r.activeControls=r.activeControls.includes(id)?r.activeControls.filter(x=>x!==id):r.activeControls.concat([id]);rerender();}));
+  $('back').addEventListener('click',()=>setStep(2));
+  $('calc').addEventListener('click',()=>{ state.risks.push(state.current); state.current=defaultRisk(); setStep(4); });
+}
+
+function riskCardHTML(r, res, o){
+  const controls=CONTROL_MAPPINGS[r.threatType]||[];
+  const gapCtrls=controls.filter(c=>c.critical&&!r.activeControls.includes(c.id));
+  const gapCount=gapCtrls.length;
+  const roi=calcROI(r,controls,res);
+  const appDollar=o.revenue*(o.appetite/100);
+  const priority=priorityOf(res.meanALE,appDollar);
+  const pColor=PRIORITY_COLORS[priority];
+  const tr=getTreatment({meanALE:res.meanALE,p95:res.p95,revenue:o.revenue,appetitePct:o.appetite,controlGapCount:gapCount,topControl:roi[0]});
+  const assumptions=generateAssumptions({risk:r,org:o,result:res,controlGapCount:gapCount});
+  const ind=INDUSTRY_DATA[o.industry];
+  const rid=r.id;
+
+  const pBoxes=[['Optimistic (P10)',res.p10,'#22c55e'],['Expected (mean)',res.meanALE,'#38bdf8'],['Bad Year (P95)',res.p95,'#ef4444']]
+    .map(x=>'<div style="background:#0f172a;border-radius:10px;padding:12px 10px;text-align:center;border:1px solid '+x[2]+'33"><p class="k" style="margin-bottom:4px">'+x[0]+'</p><p class="mono" style="font-size:17px;font-weight:800;color:'+x[2]+'">'+fmt(x[1])+'</p></div>').join('');
+
+  let roiHTML;
+  if(roi.length===0){ roiHTML='<div style="background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);border-radius:12px;padding:16px;margin-bottom:16px"><p style="font-size:11px;color:#22c55e;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:0">Investment Analysis</p><p style="font-size:13px;color:#94a3b8;margin:6px 0 0">All mapped controls for this threat are in place. No additional investment is modeled.</p></div>'; }
+  else { const rows=roi.map(c=>{const rosi=c.cost>0?((c.lossReduction-c.cost)/c.cost*100):0;const good=rosi>0;
+      return '<div style="background:#0b1220;border:1px solid #1e293b;border-radius:10px;padding:12px 14px"><div class="row" style="align-items:center"><div style="flex:1;min-width:160px"><span style="font-size:13px;font-weight:700;color:#e2e8f0">'+esc(c.name)+'</span>'+(c.critical?' <span class="crit">CRITICAL</span>':'')+'</div><div style="text-align:right"><p class="k">ROSI</p><p class="mono" id="rosi-'+rid+'-'+c.id+'" style="font-size:16px;font-weight:800;color:'+(good?'#22c55e':'#f59e0b')+'">'+(good?'+':'')+rosi.toFixed(0)+'%</p></div></div><div style="display:flex;gap:14px;margin-top:8px;flex-wrap:wrap;align-items:center"><span style="font-size:11px;color:#94a3b8">Avoids <strong style="color:#22c55e">'+fmt(c.lossReduction)+'/yr</strong></span><span style="font-size:11px;color:#94a3b8;display:flex;align-items:center;gap:6px">Cost <input type="number" class="numbox" style="width:90px" id="cost-'+rid+'~'+c.id+'" data-loss="'+Math.round(c.lossReduction)+'" data-target="rosi-'+rid+'-'+c.id+'" value="'+c.cost+'"> /yr</span></div></div>';}).join('');
+    roiHTML='<div style="background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:18px;margin-bottom:16px"><p style="font-size:11px;color:#38bdf8;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:0 0 4px">💰 Where to Invest — ranked by return</p><p style="font-size:12px;color:#64748b;margin:0 0 14px">Each missing control\'s modeled effect on expected annual loss. ROSI = (loss avoided − cost) ÷ cost. Costs are editable.</p><div style="display:flex;flex-direction:column;gap:8px">'+rows+'</div></div>'; }
+
+  let gapHTML='';
+  if(gapCount>0){ const g=gapCtrls.map(c=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(239,68,68,.1)"><span style="font-size:13px;color:#fca5a5">'+esc(c.name)+'</span><div style="display:flex;gap:6px"><span class="tag">'+c.nist+'</span><span class="tag">'+c.iso+'</span></div></div>').join('');
+    gapHTML='<div style="background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:16px;margin-bottom:16px"><p style="font-size:11px;color:#ef4444;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:0 0 10px">⚠️ Critical Control Gaps</p>'+g+'</div>'; }
+
+  const benchHTML= ind?'<div style="background:rgba(56,189,248,.05);border-radius:8px;padding:10px 14px;margin-bottom:12px;border:1px solid rgba(56,189,248,.15)"><p style="font-size:11px;color:#38bdf8;text-transform:uppercase;letter-spacing:.06em;margin:0 0 4px">📊 Benchmark — '+ind.name+' (IBM 2025)</p><p style="font-size:12px;color:#94a3b8;margin:0">Avg breach cost <strong style="color:#f1f5f9">'+fmt(ind.avgBreachCost)+'</strong> · avg detection <strong style="color:#f1f5f9">'+ind.avgDetectionDays+' days</strong>. Your bad-year exposure is '+(res.p95<ind.avgBreachCost?'<span style="color:#22c55e">below the industry average breach.</span>':'<span style="color:#ef4444">at or above the industry average breach — escalate.</span>')+'</p></div>':'';
+
+  const assumHTML=assumptions.map(a=>'<div style="background:#0f172a;border-radius:8px;padding:12px 14px;border:1px solid #1e293b"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><p style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin:0">'+a.label+'</p><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:'+CONF_COLORS[a.confidence]+'22;color:'+CONF_COLORS[a.confidence]+';border:1px solid '+CONF_COLORS[a.confidence]+'44;font-weight:700">Confidence: '+a.confidence+'</span></div><p style="font-size:12px;color:#64748b;line-height:1.6;margin:0">'+esc(a.text)+'</p></div>').join('');
+
+  return '<div style="background:rgba(15,23,42,.9);border:1px solid #1e293b;border-left:4px solid '+pColor+';border-radius:14px;padding:24px;margin-bottom:20px">'+
+    '<div style="margin-bottom:20px"><div class="row" style="align-items:center;gap:10px"><h3 style="font-size:16px;font-weight:800;color:#f1f5f9;margin:0">'+esc(r.name)+'</h3><span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:'+pColor+'22;color:'+pColor+';border:1px solid '+pColor+'44;letter-spacing:.08em;text-transform:uppercase">'+priority+' PRIORITY</span></div><p class="hint" style="margin-top:4px">'+esc(r.threatType)+' · '+esc(joinList(r.assetTypes))+'</p></div>'+
+    '<div style="background:linear-gradient(135deg,rgba(56,189,248,.10),rgba(15,23,42,.4));border:1px solid rgba(56,189,248,.2);border-radius:12px;padding:16px 18px;margin-bottom:20px"><p class="k">Expected Annual Loss (mean of simulation)</p><p style="font-size:30px;font-weight:900;color:#38bdf8;font-family:Georgia,serif;letter-spacing:-.02em;margin:0">'+fmtFull(res.meanALE)+'<span style="font-size:14px;color:#64748b;font-weight:400"> / yr</span></p><p style="font-size:12px;color:#94a3b8;margin:0">'+res.revImpactPct.toFixed(2)+'% of revenue · a bad year (95th pct) reaches <strong style="color:#ef4444">'+fmtFull(res.p95)+'</strong></p></div>'+
+    '<p class="k" style="margin-bottom:4px">Loss Exceedance Curve</p><p style="font-size:12px;color:#94a3b8;margin:0 0 12px">Probability that annual loss meets or exceeds a given amount — the signature FAIR output.</p>'+lecSVG(res.lec,res.meanALE,appDollar)+
+    '<div class="grid3" style="margin:20px 0">'+pBoxes+'</div>'+
+    '<p class="k" style="margin-bottom:10px">Inherent vs Residual</p><div class="grid2" style="margin-bottom:10px"><div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:14px 16px"><p style="font-size:10px;color:#ef4444;text-transform:uppercase;letter-spacing:.06em;margin:0 0 4px">Inherent (no controls)</p><p class="mono" style="font-size:20px;font-weight:800;color:#ef4444;margin:0">'+fmt(res.inherentALE)+'</p></div><div style="background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.2);border-radius:10px;padding:14px 16px"><p style="font-size:10px;color:#38bdf8;text-transform:uppercase;letter-spacing:.06em;margin:0 0 4px">Residual (current controls)</p><p class="mono" style="font-size:20px;font-weight:800;color:#38bdf8;margin:0">'+fmt(res.meanALE)+'</p></div></div>'+
+    '<div style="background:#0f172a;border-radius:8px;height:8px;overflow:hidden"><div style="height:100%;width:'+clamp(100-res.reductionPct,2,100)+'%;background:linear-gradient(90deg,#38bdf8,#6366f1);border-radius:8px"></div></div><div class="row" style="margin-top:4px"><span style="font-size:10px;color:#64748b">Residual remains</span><span style="font-size:10px;color:#22c55e">Controls reduce exposure '+res.reductionPct.toFixed(0)+'%</span></div>'+
+    '<div style="height:14px"></div>'+roiHTML+
+    '<div style="background:'+tr.bg+';border:1px solid '+tr.border+';border-radius:12px;padding:18px;margin-bottom:16px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><span style="font-size:20px">'+tr.icon+'</span><div><p class="k">Risk Treatment Recommendation</p><p style="font-size:16px;font-weight:800;color:'+tr.color+';margin:0">'+tr.action+'</p></div></div><p style="font-size:13px;color:#cbd5e1;line-height:1.6;margin:0 0 '+(tr.roi?'10px':'0')+'">'+esc(tr.rationale)+'</p>'+(tr.roi?'<p style="font-size:12px;color:'+tr.color+';font-weight:600;line-height:1.5;margin:0">'+esc(tr.roi)+'</p>':'')+'</div>'+
+    gapHTML+
+    '<div style="background:#0f172a;border-radius:10px;padding:16px;margin-bottom:12px;border:1px solid #1e293b"><p class="k" style="margin-bottom:8px">Executive Summary</p><p style="font-size:13px;color:#cbd5e1;line-height:1.7;margin:0"><strong style="color:#f1f5f9">'+esc(r.name)+'</strong> carries an expected annual loss of <strong style="color:#38bdf8">'+fmtFull(res.meanALE)+'</strong> ('+res.revImpactPct.toFixed(2)+'% of revenue), a <strong style="color:'+pColor+'">'+priority.toLowerCase()+' priority</strong> against the '+o.appetite+'% risk appetite. In a bad year, loss could reach <strong style="color:#ef4444">'+fmtFull(res.p95)+'</strong>. Current controls reduce exposure <strong style="color:#22c55e">'+res.reductionPct.toFixed(0)+'%</strong> versus uncontrolled.'+(gapCount>0?' <strong style="color:#f59e0b">'+gapCount+' critical gap'+(gapCount>1?'s':'')+'</strong> remain'+(gapCount>1?'':'s')+'.':'')+(roi[0]?' Highest-return next investment: <strong style="color:#38bdf8">'+esc(roi[0].name)+'</strong>.':'')+' Recommended treatment: <strong style="color:'+tr.color+'">'+tr.action+'</strong>.</p></div>'+
+    benchHTML+
+    '<button class="btn" id="atog-'+rid+'" style="background:transparent;border:1px solid #334155;color:#64748b;padding:8px 16px;font-size:12px;width:100%;text-align:left">▼ Assumptions Log & Audit Trail ('+assumptions.length+' entries)</button>'+
+    '<div id="alog-'+rid+'" style="display:none;margin-top:10px;flex-direction:column;gap:8px">'+assumHTML+'<p style="font-size:11px;color:#475569;text-align:center;padding:6px 0;margin:0">Assessment date: '+new Date().toLocaleDateString()+' · FAIR · Monte Carlo ('+ITER.toLocaleString()+' iter) · IBM Cost of a Data Breach 2025</p></div>'+
+    '</div>';
+}
+
+function renderResults(app){
+  const o=state.org;
+  const results=state.risks.map(r=>({r,res:calcFAIR(r,o.revenue)}));
+  const sorted=results.slice().sort((a,b)=>b.res.meanALE-a.res.meanALE);
+  const totalInh=results.reduce((s,x)=>s+x.res.inherentALE,0);
+  const totalRes=results.reduce((s,x)=>s+x.res.meanALE,0);
+  const appDollar=o.revenue*(o.appetite/100);
+
+  let barCard='';
+  if(state.risks.length>1){ const items=sorted.map(x=>({name:x.r.name,inherent:x.res.inherentALE,residual:x.res.meanALE,color:PRIORITY_COLORS[priorityOf(x.res.meanALE,appDollar)]}));
+    barCard='<div class="card"><h2 class="h2">Inherent vs Residual — All Scenarios</h2><p class="sub">Expected annual loss per scenario, before and after current controls.</p>'+barSVG(items)+'<div class="row" style="justify-content:center;gap:16px;margin-top:8px"><span style="font-size:11px;color:#ef4444">■ Inherent</span><span style="font-size:11px;color:#38bdf8">■ Residual</span></div></div>'; }
+
+  const cards=sorted.map(x=>riskCardHTML(x.r,x.res,o)).join('');
+
+  app.innerHTML='<div class="card" style="background:linear-gradient(135deg,rgba(56,189,248,.08) 0%,rgba(15,23,42,.95) 100%)">'+
+    '<div class="grid2" style="margin-bottom:16px"><div><p class="k">Total Inherent Exposure</p><p style="font-size:26px;font-weight:900;color:#ef4444;font-family:Georgia,serif;margin:0">'+fmt(totalInh)+'</p><p style="font-size:11px;color:#64748b;margin:0">Without any controls</p></div><div><p class="k">Total Residual Exposure</p><p style="font-size:26px;font-weight:900;color:#38bdf8;font-family:Georgia,serif;margin:0">'+fmt(totalRes)+'</p><p style="font-size:11px;color:#64748b;margin:0">After controls · '+state.risks.length+' scenario'+(state.risks.length>1?'s':'')+' · appetite '+fmt(appDollar)+'</p></div></div>'+
+    '<div class="row" style="justify-content:flex-start"><button class="btn btn-secondary" id="add">+ Add Risk</button><button class="btn btn-danger" id="reset">Reset All</button></div></div>'+
+    barCard+cards;
+
+  $('add').addEventListener('click',()=>{ state.current=defaultRisk(); setStep(1); });
+  $('reset').addEventListener('click',()=>{ state.risks=[]; state.current=defaultRisk(); setStep(0); });
+  sorted.forEach(x=>{ const rid=x.r.id; const tog=$('atog-'+rid), log=$('alog-'+rid);
+    if(tog) tog.addEventListener('click',()=>{ const open=log.style.display!=='none'; log.style.display=open?'none':'flex'; tog.textContent=(open?'▼':'▲')+' Assumptions Log & Audit Trail'+tog.textContent.slice(1); }); });
+  app.querySelectorAll('input[id^="cost-"]').forEach(inp=>{ inp.addEventListener('input',()=>{ const loss=Number(inp.dataset.loss); let cost=Number(inp.value)||0; const rosi=cost>0?((loss-cost)/cost*100):0; const span=$(inp.dataset.target); if(span){ span.textContent=(rosi>0?'+':'')+Math.round(rosi)+'%'; span.style.color=rosi>0?'#22c55e':'#f59e0b'; } }); });
+}
+
+/* ===================== MAIN RENDER ===================== */
+function render(scroll){
+  $('topbar').innerHTML=topbarHTML();
+  $('steps').innerHTML=stepsHTML();
+  const app=$('app');
+  if(state.step===0) renderOrg(app);
+  else if(state.step===1) renderScenario(app);
+  else if(state.step===2) renderFair(app);
+  else if(state.step===3) renderControls(app);
+  else renderResults(app);
+  if(scroll) window.scrollTo(0,0);
+}
+render(false);
+</script>
+</body>
+</html>
