@@ -1,6 +1,6 @@
 # 📊 FAIR Cyber Risk Quantification Engine
 
-**[🔴 LIVE DEMO: Click here to run the calculator]([https://fair-risk-quantification-engine.vercel.app/])**
+**[🔴 LIVE DEMO: Click here to run the calculator](https://fair-risk-quantification-engine.vercel.app/)**
 
 > **The Elevator Pitch:** > Security teams manage vulnerabilities; businesses manage risk. This tool bridges the gap by translating technical cyber threats into defensible, dollar-value financial metrics. It empowers CISOs to walk into a boardroom and say, *"Spending $50k on this control will reduce our financial exposure by $2.5M,"* backed by industry-standard math.
 
