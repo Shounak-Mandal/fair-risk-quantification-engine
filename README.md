@@ -36,6 +36,21 @@ You don't need a PhD in statistics to use it. The tool simplifies complex risk m
 * **Strategic Alignment:** Maps directly to NIST CSF, ISO 27001, and CIS controls so you can see exactly where your compliance gaps are causing financial exposure.
 * **Clear Risk Treatment:** Automatically recommends whether the business should **Accept, Mitigate, Transfer (Cyber Insurance), or Avoid** the risk based on the organization's predefined financial appetite.
 
+## 👤 About the Author
+
+**Shounak Mandal** — GRC & Cyber Risk Analyst | ISO/IEC 27001 Lead Auditor
+5 years of enterprise security delivery at Accenture Security across global FMCG (Upfield) and Insurance (AXA XL) clients. Now focused on Cyber Risk Quantification, ISMS implementation, and bridging SOC delivery with formal GRC practice.
+
+**Certifications:** ISO/IEC 27001 Lead Auditor • Microsoft AZ-500 • Microsoft SC-200 • Qualys VMDR & Policy Compliance
+
+**Connect:**
+- 🔗 [LinkedIn](https://linkedin.com/in/shounak-mandal-39a5a1216)
+- 📧 mandalshounak22@gmail.com
+
+*Open to: GRC Analyst, Cyber Risk Consultant, ISMS Lead Auditor roles across Bangalore, Hyderabad, Mumbai, Pune, Gurgaon, and Remote.*
+
+---
+
 ## 🛠️ Technical Stack
 Designed to be fast, serverless, and entirely client-side:
 * **Frontend UI:** HTML5, CSS3
